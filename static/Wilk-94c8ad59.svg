@@ -1,0 +1,9 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='800' height='500'>
+  <rect width='100%' height='100%' fill='#111827' />
+  <circle cx='620' cy='140' r='110' fill='#f59e0b' opacity='0.9' />
+  <path d='M0 380 C140 300 240 310 330 360 S560 430 800 330 L800 500 L0 500 Z' fill='#1d4ed8' opacity='0.8' />
+  <path d='M0 420 C180 340 280 350 390 390 S610 450 800 390' stroke='#f8fafc' stroke-width='3' fill='none' opacity='0.8' />
+  <rect x='70' y='90' width='310' height='180' rx='20' fill='#ffffff' opacity='0.12' />
+  <text x='110' y='170' font-size='25' fill='#f8fafc' font-family='Arial, sans-serif'>Generated prompt</text>
+  <text x='110' y='215' font-size='22' fill='#f8fafc' font-family='Arial, sans-serif'>Wilk</text>
+</svg>

@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Result</title>
+    <style>
+      body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem; }
+      img { max-width: 100%; border-radius: 12px; margin-top: 1rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Generated image</h1>
+    <p><strong>Prompt:</strong> {{ prompt }}</p>
+    <img src="{{ image_url }}" alt="Generated image" />
+    <p><a href="/">Generate another</a></p>
+  </body>
+</html>
