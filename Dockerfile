@@ -1,15 +1,13 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install build deps (kept minimal)
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential git && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt .
 
-COPY . /app
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN python -m pip install --upgrade pip
-RUN if [ -f requirements.txt ]; then pip install -r requirements.txt; else pip install flask; fi
+COPY . .
 
 EXPOSE 5000
 
-CMD ["python", "AI1mageGenerator.py"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
