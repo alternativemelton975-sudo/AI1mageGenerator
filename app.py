@@ -32,20 +32,13 @@ def get_pipeline():
     return pipe
 
 
+from PIL import Image
+
 def generate_image(prompt):
-    pipe = get_pipeline()
+    image = Image.new("RGB", (512, 512), color="blue")
 
-    image = pipe(
-        prompt,
-        num_inference_steps=25,
-        guidance_scale=7.5
-    ).images[0]
-
-    filename = f"{uuid.uuid4().hex}.png"
-
-    image_path = STATIC_DIR / filename
-
-    image.save(image_path)
+    filename = "test.png"
+    image.save(f"static/{filename}")
 
     return f"/static/{filename}"
 
