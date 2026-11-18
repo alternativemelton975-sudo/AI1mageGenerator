@@ -1,48 +1,67 @@
-from flask import Flask, render_template, request
-from pathlib import Path
 import os
 import uuid
-import requests
+import random
+
+from flask import Flask, render_template, request
+from PIL import Image, ImageDraw, ImageFont
 
 app = Flask(__name__)
 
-BASE_DIR = Path(__file__).resolve().parent
-STATIC_DIR = BASE_DIR / "static"
-STATIC_DIR.mkdir(exist_ok=True)
-
-HF_TOKEN = os.getenv("HF_TOKEN")
-
-API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2"
-
-HEADERS = {
-    "Authorization": f"Bearer {HF_TOKEN}"
-}
+os.makedirs("static", exist_ok=True)
 
 
 def generate_image(prompt):
-    if not HF_TOKEN:
-        raise Exception("HF_TOKEN environment variable is missing.")
+    width = 768
+    height = 768
 
-    response = requests.post(
-        API_URL,
-        headers=HEADERS,
-        json={"inputs": prompt},
-        timeout=120
+    image = Image.new(
+        "RGB",
+        (width, height),
+        (
+            random.randint(0, 255),
+            random.randint(0, 255),
+            random.randint(0, 255)
+        )
     )
 
-    print("Status:", response.status_code)
+    draw = ImageDraw.Draw(image)
 
-    if response.status_code != 200:
-        raise Exception(
-            f"API Error {response.status_code}: {response.text}"
+    for _ in range(100):
+        x1 = random.randint(0, width)
+        y1 = random.randint(0, height)
+        x2 = random.randint(0, width)
+        y2 = random.randint(0, height)
+
+        draw.line(
+            (x1, y1, x2, y2),
+            fill=(
+                random.randint(0, 255),
+                random.randint(0, 255),
+                random.randint(0, 255)
+            ),
+            width=random.randint(1, 8)
         )
+
+    try:
+        font = ImageFont.truetype("arial.ttf", 30)
+    except Exception:
+        font = ImageFont.load_default()
+
+    draw.text(
+        (25, 25),
+        prompt,
+        fill=(255, 255, 255),
+        font=font
+    )
 
     filename = f"{uuid.uuid4().hex}.png"
 
-    image_path = STATIC_DIR / filename
+    filepath = os.path.join(
+        "static",
+        filename
+    )
 
-    with open(image_path, "wb") as image_file:
-        image_file.write(response.content)
+    image.save(filepath)
 
     return f"/static/{filename}"
 
@@ -50,20 +69,6 @@ def generate_image(prompt):
 @app.route("/")
 def index():
     return render_template("index.html")
-
-
-@app.route("/test")
-def test():
-    try:
-        response = requests.get(
-            "https://www.google.com",
-            timeout=10
-        )
-
-        return f"Success: {response.status_code}"
-
-    except Exception as e:
-        return str(e)
 
 
 @app.route("/generate", methods=["POST"])
@@ -74,7 +79,7 @@ def generate():
     ).strip()
 
     if not prompt:
-        prompt = "A fantasy landscape"
+        prompt = "Random Artwork"
 
     try:
         image_url = generate_image(prompt)
@@ -100,4 +105,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=5000,
         debug=True
-    )
+    )  
