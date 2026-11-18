@@ -18,8 +18,8 @@ HEADERS = {
     "Authorization": f"Bearer {HF_TOKEN}"
 }
 
-def generate_image(prompt):
 
+def generate_image(prompt):
     print("Using URL:", API_URL)
     print("Token exists:", bool(HF_TOKEN))
 
@@ -30,18 +30,25 @@ def generate_image(prompt):
         timeout=120
     )
 
-    print(response.status_code)
+    print("Status Code:", response.status_code)
 
     if response.status_code != 200:
         raise Exception(
             f"API Error: {response.status_code} - {response.text}"
         )
 
+    if response.headers.get(
+        "content-type",
+        ""
+    ).startswith("application/json"):
+        raise Exception(response.text)
+
     filename = f"{uuid.uuid4().hex}.png"
+
     image_path = STATIC_DIR / filename
 
-    with open(image_path, "wb") as f:
-        f.write(response.content)
+    with open(image_path, "wb") as image_file:
+        image_file.write(response.content)
 
     return f"/static/{filename}"
 
@@ -67,10 +74,13 @@ def generate():
         return render_template(
             "result.html",
             prompt=prompt,
-            image_url=image_url
+            image_url=image_url,
+            error=None
         )
 
     except Exception as e:
+        print("Generation Error:", str(e))
+
         return render_template(
             "result.html",
             prompt=prompt,
@@ -82,5 +92,6 @@ def generate():
 if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
-        port=5000
+        port=5000,
+        debug=True
     )
