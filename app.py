@@ -1,4 +1,3 @@
-import os
 import re
 import uuid
 from pathlib import Path
@@ -42,59 +41,57 @@ def generate_image(prompt: str):
             num_inference_steps=20
         )
 
-        saved_images = []
+        image_paths = []
 
         for i, image in enumerate(result.images):
             filename = (
                 f"{slugify(prompt)}-"
-                f"{uuid.uuid4().hex[:8]}-{i+1}.png"
+                f"{uuid.uuid4().hex[:8]}-"
+                f"{i + 1}.png"
             )
 
             image_path = STATIC_DIR / filename
 
             image.save(image_path)
 
-            saved_images.append(str(image_path))
+            image_paths.append(filename)
 
-        return saved_images
+        return image_paths
 
     except Exception as e:
-        print(f"Generation error: {e}")
+        print(f"Image Generation Error: {e}")
 
-        saved_images = []
+        image_paths = []
 
         for i in range(4):
-            svg_path = STATIC_DIR / (
+            filename = (
                 f"{slugify(prompt)}-"
-                f"{uuid.uuid4().hex[:8]}-{i+1}.svg"
+                f"{uuid.uuid4().hex[:8]}-"
+                f"{i + 1}.svg"
             )
+
+            svg_path = STATIC_DIR / filename
 
             svg = f"""
 <svg xmlns="http://www.w3.org/2000/svg" width="800" height="500">
   <rect width="100%" height="100%" fill="#111827"/>
   <circle cx="620" cy="140" r="110" fill="#f59e0b" opacity="0.9"/>
-  <path d="M0 380 C140 300 240 310 330 360 S560 430 800 330 L800 500 L0 500 Z"
-        fill="#1d4ed8" opacity="0.8"/>
-  <path d="M0 420 C180 340 280 350 390 390 S610 450 800 390"
-        stroke="#f8fafc" stroke-width="3"
-        fill="none" opacity="0.8"/>
-  <rect x="70" y="90" width="310" height="180"
-        rx="20" fill="#ffffff" opacity="0.12"/>
-  <text x="110" y="170"
-        font-size="25"
-        fill="#f8fafc"
-        font-family="Arial">
-        Generated Prompt
-  </text>
-  <text x="110" y="215"
-        font-size="22"
-        fill="#f8fafc"
+  <path d="M0 380 C140 300 240 310 330 360
+           S560 430 800 330
+           L800 500 L0 500 Z"
+        fill="#1d4ed8"
+        opacity="0.8"/>
+  <text x="100"
+        y="200"
+        fill="white"
+        font-size="24"
         font-family="Arial">
         {prompt}
   </text>
-  <text x="110" y="260"
-        font-size="18"
+  <text x="100"
+        y="250"
         fill="#f59e0b"
+        font-size="20"
         font-family="Arial">
         Variation {i + 1}
   </text>
@@ -103,12 +100,12 @@ def generate_image(prompt: str):
 
             svg_path.write_text(svg, encoding="utf-8")
 
-            saved_images.append(str(svg_path))
+            image_paths.append(filename)
 
-        return saved_images
+        return image_paths
 
 
-@app.route("/", methods=["GET"])
+@app.route("/")
 def index():
     return render_template("index.html")
 
@@ -120,14 +117,11 @@ def generate_web_image():
         ""
     ).strip() or "A fantasy landscape"
 
-    image_paths = generate_image(prompt)
+    image_files = generate_image(prompt)
 
     image_urls = [
-        os.path.relpath(
-            path,
-            start=BASE_DIR
-        ).replace("\\", "/")
-        for path in image_paths
+        f"/static/{filename}"
+        for filename in image_files
     ]
 
     return render_template(
