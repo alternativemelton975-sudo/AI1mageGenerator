@@ -1,38 +1,53 @@
 import os
+import uuid
+from pathlib import Path
 
-import requests
 from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
-PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY")
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
+STATIC_DIR.mkdir(exist_ok=True)
+
+pipe = None
 
 
-def search_images(query):
-    if not PIXABAY_API_KEY:
-        return []
+def get_pipeline():
+    global pipe
 
-    url = "https://pixabay.com/api/"
+    if pipe is None:
+        import torch
+        from diffusers import StableDiffusionPipeline
 
-    params = {
-        "key": PIXABAY_API_KEY,
-        "q": query,
-        "image_type": "photo",
-        "safesearch": "true",
-        "per_page": 12
-    }
+        pipe = StableDiffusionPipeline.from_pretrained(
+            "runwayml/stable-diffusion-v1-5",
+            torch_dtype=torch.float32
+        )
 
-    response = requests.get(url, params=params, timeout=10)
+        pipe = pipe.to(
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )
 
-    if response.status_code != 200:
-        return []
+    return pipe
 
-    data = response.json()
 
-    return [
-        image["webformatURL"]
-        for image in data.get("hits", [])
-    ]
+def generate_image(prompt):
+    pipe = get_pipeline()
+
+    image = pipe(
+        prompt,
+        num_inference_steps=25,
+        guidance_scale=7.5
+    ).images[0]
+
+    filename = f"{uuid.uuid4().hex}.png"
+
+    image_path = STATIC_DIR / filename
+
+    image.save(image_path)
+
+    return f"/static/{filename}"
 
 
 @app.route("/")
@@ -41,28 +56,20 @@ def index():
 
 
 @app.route("/generate", methods=["POST"])
-def generate_web_image():
-
+def generate():
     prompt = request.form.get(
         "prompt",
-        ""
-    ).strip()
+        "A fantasy landscape"
+    )
 
-    if not prompt:
-        prompt = "nature"
-
-    image_urls = search_images(prompt)
+    image_url = generate_image(prompt)
 
     return render_template(
         "result.html",
         prompt=prompt,
-        image_urls=image_urls
+        image_url=image_url
     )
 
 
 if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=True
-    )
+    app.run(host="0.0.0.0", port=5000)
