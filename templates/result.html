@@ -1,18 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Generated Images</title>
+    <title>{{ prompt }}</title>
+
+    <style>
+        body{
+            text-align:center;
+            font-family:Arial,sans-serif;
+        }
+
+        .gallery{
+            display:flex;
+            flex-wrap:wrap;
+            justify-content:center;
+            gap:20px;
+        }
+
+        img{
+            width:300px;
+            border-radius:10px;
+        }
+    </style>
+
 </head>
 <body>
 
-<h1>{{ prompt }}</h1>
+<h1>Results for "{{ prompt }}"</h1>
 
-{% for image_url in image_urls %}
-    <img src="{{ image_url }}" width="500">
-    <br><br>
-{% endfor %}
+<div class="gallery">
+    {% for image in image_urls %}
+        <img src="{{ image }}" alt="{{ prompt }}">
+    {% endfor %}
+</div>
 
-<a href="/">Generate Another</a>
+<br>
+
+<a href="/">Search Again</a>
 
 </body>
 </html>
