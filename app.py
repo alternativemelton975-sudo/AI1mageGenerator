@@ -1,7 +1,7 @@
 import os
 import uuid
+import requests
 from pathlib import Path
-
 from flask import Flask, render_template, request
 
 app = Flask(__name__)
@@ -10,35 +10,36 @@ BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 STATIC_DIR.mkdir(exist_ok=True)
 
-pipe = None
+HF_TOKEN = os.getenv("HF_TOKEN")
 
+API_URL = (
+    "https://api-inference.huggingface.co/models/"
+    "stabilityai/stable-diffusion-2"
+)
 
-def get_pipeline():
-    global pipe
+HEADERS = {
+    "Authorization": f"Bearer {HF_TOKEN}"
+}
 
-    if pipe is None:
-        import torch
-        from diffusers import StableDiffusionPipeline
-
-        pipe = StableDiffusionPipeline.from_pretrained(
-            "runwayml/stable-diffusion-v1-5",
-            torch_dtype=torch.float32
-        )
-
-        pipe = pipe.to(
-            "cuda" if torch.cuda.is_available() else "cpu"
-        )
-
-    return pipe
-
-
-from PIL import Image
 
 def generate_image(prompt):
-    image = Image.new("RGB", (512, 512), color="blue")
+    response = requests.post(
+        API_URL,
+        headers=HEADERS,
+        json={"inputs": prompt},
+        timeout=120
+    )
 
-    filename = "test.png"
-    image.save(f"static/{filename}")
+    if response.status_code != 200:
+        raise Exception(
+            f"API Error: {response.status_code} - {response.text}"
+        )
+
+    filename = f"{uuid.uuid4().hex}.png"
+    image_path = STATIC_DIR / filename
+
+    with open(image_path, "wb") as f:
+        f.write(response.content)
 
     return f"/static/{filename}"
 
@@ -52,17 +53,32 @@ def index():
 def generate():
     prompt = request.form.get(
         "prompt",
-        "A fantasy landscape"
-    )
+        ""
+    ).strip()
 
-    image_url = generate_image(prompt)
+    if not prompt:
+        prompt = "A fantasy landscape"
 
-    return render_template(
-        "result.html",
-        prompt=prompt,
-        image_url=image_url
-    )
+    try:
+        image_url = generate_image(prompt)
+
+        return render_template(
+            "result.html",
+            prompt=prompt,
+            image_url=image_url
+        )
+
+    except Exception as e:
+        return render_template(
+            "result.html",
+            prompt=prompt,
+            image_url=None,
+            error=str(e)
+        )
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(
+        host="0.0.0.0",
+        port=5000
+    )
