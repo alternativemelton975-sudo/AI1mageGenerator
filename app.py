@@ -1,9 +1,8 @@
+from flask import Flask, render_template, request
+from pathlib import Path
 import os
 import uuid
-from pathlib import Path
-
 import requests
-from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
@@ -22,9 +21,7 @@ HEADERS = {
 
 def generate_image(prompt):
     if not HF_TOKEN:
-        raise Exception(
-            "HF_TOKEN environment variable is missing."
-        )
+        raise Exception("HF_TOKEN environment variable is missing.")
 
     response = requests.post(
         API_URL,
@@ -33,25 +30,19 @@ def generate_image(prompt):
         timeout=120
     )
 
+    print("Status:", response.status_code)
+
     if response.status_code != 200:
         raise Exception(
             f"API Error {response.status_code}: {response.text}"
         )
 
-    content_type = response.headers.get(
-        "Content-Type",
-        ""
-    )
-
-    if "application/json" in content_type:
-        raise Exception(response.text)
-
     filename = f"{uuid.uuid4().hex}.png"
 
     image_path = STATIC_DIR / filename
 
-    with open(image_path, "wb") as f:
-        f.write(response.content)
+    with open(image_path, "wb") as image_file:
+        image_file.write(response.content)
 
     return f"/static/{filename}"
 
@@ -59,6 +50,20 @@ def generate_image(prompt):
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/test")
+def test():
+    try:
+        response = requests.get(
+            "https://www.google.com",
+            timeout=10
+        )
+
+        return f"Success: {response.status_code}"
+
+    except Exception as e:
+        return str(e)
 
 
 @app.route("/generate", methods=["POST"])
@@ -88,18 +93,6 @@ def generate():
             image_url=None,
             error=str(e)
         )
-
-
-@app.route("/test")
-def test():
-    try:
-        r = requests.get(
-            "https://www.google.com",
-            timeout=10
-        )
-        return f"Success: {r.status_code}"
-    except Exception as e:
-        return str(e)
 
 
 if __name__ == "__main__":
