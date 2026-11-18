@@ -1,7 +1,3 @@
 Flask
-torch
-diffusers
-Pillow
-accelerate
-safetensors
+requests
 gunicorn
