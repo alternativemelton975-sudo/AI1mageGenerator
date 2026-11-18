@@ -12,23 +12,25 @@ STATIC_DIR.mkdir(exist_ok=True)
 
 HF_TOKEN = os.getenv("HF_TOKEN")
 
-API_URL = (
-    "https://api-inference.huggingface.co/models/"
-    "stabilityai/stable-diffusion-2"
-)
+API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2"
 
 HEADERS = {
     "Authorization": f"Bearer {HF_TOKEN}"
 }
 
-
 def generate_image(prompt):
+
+    print("Using URL:", API_URL)
+    print("Token exists:", bool(HF_TOKEN))
+
     response = requests.post(
         API_URL,
         headers=HEADERS,
         json={"inputs": prompt},
         timeout=120
     )
+
+    print(response.status_code)
 
     if response.status_code != 200:
         raise Exception(
