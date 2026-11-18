@@ -1,13 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Generated Image</title>
+    <title>AI1mageGenerator</title>
 </head>
 <body>
 
 <h1>{{ prompt }}</h1>
 
-<img src="{{ image_url }}" width="768">
+{% if error %}
+    <p>{{ error }}</p>
+{% endif %}
+
+{% if image_url %}
+    <img src="{{ image_url }}" width="768">
+{% endif %}
 
 <br><br>
 
