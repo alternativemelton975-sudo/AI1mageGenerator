@@ -5,19 +5,24 @@
 </head>
 <body>
 
-<h1>{{ prompt }}</h1>
+    <h1>{{ prompt }}</h1>
 
-{% if error %}
-    <p>{{ error }}</p>
-{% endif %}
+    {% if error %}
+        <h3>Error</h3>
+        <p>{{ error }}</p>
+    {% endif %}
 
-{% if image_url %}
-    <img src="{{ image_url }}" width="768">
-{% endif %}
+    {% if image_url %}
+        <img src="{{ image_url }}" alt="Generated Image" width="700">
+    {% endif %}
 
-<br><br>
+    {% if not image_url and not error %}
+        <p>No image was returned.</p>
+    {% endif %}
 
-<a href="/">Generate Another</a>
+    <br><br>
+
+    <a href="/">Generate Another</a>
 
 </body>
 </html>
