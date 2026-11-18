@@ -1,108 +1,38 @@
-import re
-import uuid
-from pathlib import Path
+import os
 
+import requests
 from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
-BASE_DIR = Path(__file__).resolve().parent
-STATIC_DIR = BASE_DIR / "static"
-STATIC_DIR.mkdir(exist_ok=True)
+PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY")
 
 
-def slugify(value: str) -> str:
-    value = re.sub(r"[^a-zA-Z0-9]+", "-", value).strip("-")
-    return value or "image"
+def search_images(query):
+    if not PIXABAY_API_KEY:
+        return []
 
+    url = "https://pixabay.com/api/"
 
-def generate_image(prompt: str):
-    prompt = (prompt or "A fantasy landscape").strip()
+    params = {
+        "key": PIXABAY_API_KEY,
+        "q": query,
+        "image_type": "photo",
+        "safesearch": "true",
+        "per_page": 12
+    }
 
-    try:
-        import torch
-        from diffusers import StableDiffusionPipeline
+    response = requests.get(url, params=params, timeout=10)
 
-        model_id = "runwayml/stable-diffusion-v1-5"
+    if response.status_code != 200:
+        return []
 
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        torch_dtype = torch.float16 if device == "cuda" else torch.float32
+    data = response.json()
 
-        pipe = StableDiffusionPipeline.from_pretrained(
-            model_id,
-            torch_dtype=torch_dtype
-        )
-
-        pipe = pipe.to(device)
-
-        result = pipe(
-            prompt,
-            num_images_per_prompt=4,
-            num_inference_steps=20
-        )
-
-        image_paths = []
-
-        for i, image in enumerate(result.images):
-            filename = (
-                f"{slugify(prompt)}-"
-                f"{uuid.uuid4().hex[:8]}-"
-                f"{i + 1}.png"
-            )
-
-            image_path = STATIC_DIR / filename
-
-            image.save(image_path)
-
-            image_paths.append(filename)
-
-        return image_paths
-
-    except Exception as e:
-        print(f"Image Generation Error: {e}")
-
-        image_paths = []
-
-        for i in range(4):
-            filename = (
-                f"{slugify(prompt)}-"
-                f"{uuid.uuid4().hex[:8]}-"
-                f"{i + 1}.svg"
-            )
-
-            svg_path = STATIC_DIR / filename
-
-            svg = f"""
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500">
-  <rect width="100%" height="100%" fill="#111827"/>
-  <circle cx="620" cy="140" r="110" fill="#f59e0b" opacity="0.9"/>
-  <path d="M0 380 C140 300 240 310 330 360
-           S560 430 800 330
-           L800 500 L0 500 Z"
-        fill="#1d4ed8"
-        opacity="0.8"/>
-  <text x="100"
-        y="200"
-        fill="white"
-        font-size="24"
-        font-family="Arial">
-        {prompt}
-  </text>
-  <text x="100"
-        y="250"
-        fill="#f59e0b"
-        font-size="20"
-        font-family="Arial">
-        Variation {i + 1}
-  </text>
-</svg>
-"""
-
-            svg_path.write_text(svg, encoding="utf-8")
-
-            image_paths.append(filename)
-
-        return image_paths
+    return [
+        image["webformatURL"]
+        for image in data.get("hits", [])
+    ]
 
 
 @app.route("/")
@@ -112,17 +42,16 @@ def index():
 
 @app.route("/generate", methods=["POST"])
 def generate_web_image():
+
     prompt = request.form.get(
         "prompt",
         ""
-    ).strip() or "A fantasy landscape"
+    ).strip()
 
-    image_files = generate_image(prompt)
+    if not prompt:
+        prompt = "nature"
 
-    image_urls = [
-        f"/static/{filename}"
-        for filename in image_files
-    ]
+    image_urls = search_images(prompt)
 
     return render_template(
         "result.html",
