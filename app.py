@@ -56,7 +56,19 @@ def generate_image(prompt):
 @app.route("/")
 def index():
     return render_template("index.html")
+    
+@app.route("/test")
+def test():
+    try:
+        response = requests.get(
+            "https://www.google.com",
+            timeout=10
+        )
 
+        return f"Success: {response.status_code}"
+
+    except Exception as e:
+        return str(e)
 
 @app.route("/generate", methods=["POST"])
 def generate():
