@@ -1,2 +1,1 @@
-AVAILABLE ON DOCKER 
-https://hub.docker.com/r/thecorvidwarrior/ai-image-generator
+https://ai1magegenerator.onrender.com/
